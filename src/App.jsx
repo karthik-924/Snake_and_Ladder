@@ -1,17 +1,16 @@
-
-import { Button } from '@mantine/core'
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import Home from './pages/Home'
 import './App.css'
 
 function App() {
   
 
   return (
-    <>
-      <p className=" text-blue-300">
-        Click on the Vite and React logos to learn more
-      </p>
-      <Button variant="filled">Button</Button>
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Home />} />
+      </Routes>
+    </Router>
   )
 }
 
