@@ -7,18 +7,19 @@ import { Button } from "@mantine/core";
 import Start from "../components/Start";
 
 const Home = () => {
-  const playerColors = ["#000000", "#000080","#008800","#ff9900"];
+  const players = ["#000000", "#000080"];
   const [play, setPlay] = useState(false);
-  const [position, setPosition] = useState({});
-  // const [currentPlayer, setCurrentPlayer] = useState("");
   const [roomCode, setRoomCode] = useState("");
   const [playerName, setPlayerName] = useState("");
-  const [players, setPlayers] = useState([]);
+  const [position, setPosition] = useState({
+    [players[0].split("#")[1]]: 1,
+    [players[1].split("#")[1]]: 1,
+  });
   const [diceValue, setDiceValue] = useState(0);
   const [diceDisabled, setDiceDisabled] = useState(false);
-  const [turn, setTurn] = useState("");
+  const [turn, setTurn] = useState("000000");
   const [rolled, setRolled] = useState(false);
-  const [noofplayers, setNoofplayers] = useState(-1);
+  const [isComputerTurn, setIsComputerTurn] = useState(false);
   const socket = io('http://localhost:5000');
   const laddersfrom = [4, 9, 19, 21, 34, 51, 72, 80];
   const laddersto = [14, 31, 44, 59, 84, 67, 91, 99];
@@ -30,98 +31,73 @@ const Home = () => {
     setRoomCode(newRoomCode);
 
     const playerName = prompt("Enter your name:");
-    const noofplayers = prompt("Enter no of players:");
     setPlayerName(playerName);
-    setNoofplayers(noofplayers);
-    socket.emit("createRoom", { roomCode: newRoomCode, playerName, noofplayers });
-    socket.on("playerList", (players) => {
-      setPlayers(players.reduce((acc, player) => {
-        acc.push(player.name);
-        return acc;
-      }, []));
-      console.log(players);
-      setPosition(players.reduce((acc, player) => {
-        acc[player] = 1;
-        return acc;
-      }, {}));
-      setTurn(players[0].name);
-      
-    });
-    // const name = prompt("Enter your name:");
+
+    socket.emit("createRoom", { roomCode: newRoomCode, playerName });
+    setPlay(true);
   };
 
   const startPlayWithComputer = () => {
     const newRoomCode = Math.random().toString(36).substring(2, 8);
     setRoomCode(newRoomCode);
-  
+
     const playerName = prompt("Enter your name:");
     setPlayerName(playerName);
-  
-    socket.emit("createRoom", { roomCode: newRoomCode, playerName, noofplayers: 2 });
-  
-    const computerName = "Computer";
-    setPlayers([playerName, computerName]);
-  
-    setPosition((prevPosition) => ({
-      ...prevPosition,
-      [playerName]: 1,
-      [computerName]: 1,
-    }));
-  
-    setTurn(playerName);
+
+    socket.emit("createRoom", { roomCode: newRoomCode, playerName });
     setPlay(true);
-  
-    // Start the computer's turn
-    setTimeout(() => {
-      startComputerTurn(computerName);
-    }, 1000); // Delay for 1 second before starting the computer's turn
+    setIsComputerTurn(true);
+    startComputerTurn();
   };
-  
-  const startComputerTurn = (computerName) => {
-    // Simulate the computer rolling the dice and make a random move
-    const diceValue = Math.floor(Math.random() * 6) + 1;
-    updateDiceValue(diceValue);
-  
-    // Calculate the target position for the computer
-    const currentPlayerPosition = position[computerName];
-    const targetPosition = currentPlayerPosition + diceValue;
-  
-    // Move the computer
-    movePlayer(computerName, currentPlayerPosition, targetPosition);
-  };
-  
 
   const startPlayWithFriend = () => {
     const newRoomCode = prompt("Enter room code:")
     setRoomCode(newRoomCode);
+
     const playerName = prompt("Enter your name:");
-    socket.emit("joinRoom", { roomCode: newRoomCode, playerName });
-    socket.on("playerList", (players) => {
-      setPlayers(players.reduce((acc, player) => {
-        acc.push(player.name);
-        return acc;
-      }, []));
-      console.log(players);
-      setPosition(players.reduce((acc, player) => {
-        acc[player] = 1;
-        return acc;
-      }, {}));
-      setTurn(players[0].name);
-      
-      
-    });
-    
-    
-    
-    
+    setPlayerName(playerName);
+
+    socket.emit("createRoom", { roomCode: newRoomCode, playerName });
+    setPlay(true);
   };
-  
+
+  const startComputerTurn = () => {
+    const computerDiceValue = Math.floor(Math.random() * 6) + 1;
+    updateDiceValue(computerDiceValue);
+
+    setTimeout(() => {
+      movePlayer(turn, position[turn], position[turn] + computerDiceValue);
+    }, 1000);
+  };
+
   useEffect(() => {
-    if (players.length === noofplayers) 
-      setPlay(true);
+    // Listening for updates from the server
+    socket.on("gameStateUpdate", (updatedPosition) => {
+      setPosition(updatedPosition);
+    });
 
-  }, [players]);
+    socket.on("gameStartWithFriend", () => {
+      setIsComputerTurn(false);
+      alert("The game has started with your friend. It's your turn.");
+    });
 
+    socket.on("nextTurn", ({ nextPlayer }) => {
+      if (nextPlayer === playerName) {
+        setIsComputerTurn(false);
+        alert(`It's your turn, ${nextPlayer}!`);
+      } else {
+        setIsComputerTurn(true);
+        alert(`It's ${nextPlayer}'s turn.`);
+        startComputerTurn();
+      }
+    });
+
+    return () => {
+      socket.off("gameStateUpdate");
+      socket.off("gameStartWithFriend");
+      socket.off("nextTurn");
+    };
+  }, [roomCode]);
 
   const updateDiceValue = async (value) => {
     console.log(value);
@@ -136,27 +112,6 @@ const Home = () => {
     }));
   };
 
-  useEffect(() => {
-    // Listening for updates from the server
-    socket.on("gameStateUpdate", (updatedPosition) => {
-      setPosition(updatedPosition);
-    });
-
-    socket.on("gameStartWithFriend", () => {
-      alert("The game has started with your friend. It's your turn.");
-    });
-
-    socket.on("nextTurn", ({ nextPlayer }) => {
-      
-    });
-
-    return () => {
-      socket.off("gameStateUpdate");
-      socket.off("gameStartWithFriend");
-      socket.off("nextTurn");
-    };
-  }, [roomCode]);
-
   const movePlayer = (player, from, to) => {
     if (from === to) {
       // If already at the target position, proceed to the next player's turn
@@ -168,60 +123,51 @@ const Home = () => {
         movePlayerDirectly(player, from, snakesto[index]);
       }
 
-      const currentPlayerIndex = players.indexOf(`${turn}`);
-      if (players.length === 1) {
-        setTurn(turn);
-        setDiceDisabled(false);
-        return;
-      }
+      const currentPlayerIndex = players.indexOf(`#${turn}`);
       const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
       const nextPlayerTurn = players[nextPlayerIndex].split("#")[1];
       setTurn(nextPlayerTurn);
       setDiceDisabled(false);
+      // Emit an event to update game state on the server
+      socket.emit("updateGameState", { roomCode, position });
       return;
     }
 
-    // Calculate the direction of movement
+    // Direction of movement
     const direction = from < to ? 1 : -1;
 
-    // Update the position with the new step
+    // Updating the position with the new step
     setPosition((prevPosition) => ({
       ...prevPosition,
       [player]: prevPosition[player] + direction,
     }));
 
-    // Wait for a short delay
     setTimeout(() => {
-      // Move to the next step
+      // Moving to the next step
       movePlayer(player, from + direction, to);
-    }, 300); // Adjust the delay as needed
+    }, 300);
   };
 
   useEffect(() => {
-    if (diceValue !== 0) {
-      // Disable the dice while processing
+    if (!isComputerTurn && diceValue !== 0) {
       setDiceDisabled(true);
-      console.log(position);
-      // socket.emit("find",{name:turn,dice:diceValue})
-      // Calculate the target position
+      socket.emit("find", { name: turn, dice: diceValue });
       const currentPlayerPosition = position[turn];
       const targetPosition = currentPlayerPosition + diceValue;
 
-      // Move the player
-
       movePlayer(turn, currentPlayerPosition, targetPosition);
     }
-  }, [rolled]);
+  }, [isComputerTurn, rolled]);
   
   return (
     <div>
       <div className={`${play?"hidden":"w-screen h-screen justify-center items-center flex"}`}>
-      <Start startPlay={startPlay} startPlayWithComputer={startPlayWithComputer} startPlayWithFriend={startPlayWithFriend}/>
-      </div>
-    <div className={`${play?"":"hidden"}`}>
+        <Start startPlay={startPlay} startPlayWithComputer={startPlayWithComputer} startPlayWithFriend={startPlayWithFriend}/>
+        </div>
+      <div className={`${play ? "" : "hidden"}`}>
+      {roomCode && <p>Room Code: {roomCode}</p>}
       <Board
-          players={players}
-          playerColors={playerColors}
+        players={players}
         position={position}
         setPosition={setPosition}
         diceValue={diceValue}

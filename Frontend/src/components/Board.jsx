@@ -1,7 +1,7 @@
 // import React from 'react'
 // import { useEffect, useState } from "react";
 import Dice from "react-dice-roll";
-import "./Home.css";
+import "../pages/Home.css";
 
 import ladder2 from "../assets/ladder22.png";
 import snake1 from "../assets/s1.png";
@@ -12,7 +12,7 @@ import snake7 from "../assets/s7.png";
 import snake5 from "../assets/s5.png";
 import snake8 from "../assets/s8.png";
 import snake9 from "../assets/snake4.png";
-const Board = ({ players, position, updateDiceValue, diceDisabled }) => {
+const Board = ({ players,playerColors, position, updateDiceValue, diceDisabled }) => {
   console.log(players);
   const colors = [
     "#ed1f28",
@@ -236,16 +236,14 @@ const Board = ({ players, position, updateDiceValue, diceDisabled }) => {
               {players?.map((player, index) => (
                 <div
                   key={index}
-                  id={player.split("#")[1]}
-                  className={`players ${
-                    player.split("#")[1]
-                  }_${value} absolute ${
-                    String(position[player.split("#")[1]]) === String(value)
+                  id={player}
+                  className={`players absolute ${
+                    String(position[player]) === String(value)
                       ? "visible"
                       : "invisible"
                   } h-10 w-10 rounded-full opacity-[0.7]`}
                   style={{
-                    backgroundColor: player,
+                    backgroundColor: playerColors[index],
                   }}
                 ></div>
               ))}
