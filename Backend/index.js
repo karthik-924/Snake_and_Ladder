@@ -10,6 +10,7 @@ const io = new Server(server, {
     origin: 'http://localhost:5173',
     methods: ['GET', 'POST'],
   },
+  transports: ['websocket', 'polling'],
 });
 
 app.use(cors());
@@ -49,8 +50,10 @@ io.on("connection", (socket) => {
     if (!rooms[roomCode]) {
       return;
     }
-
+    
     const room = rooms[roomCode];
+    const playerExists = room.players.some(player => player.name === playerName);
+    if(!playerExists)
     room.players.push({ id: socket.id, name: playerName, position: 1 });
     socket.join(roomCode);
     console.log(`Player ${playerName} joined room ${roomCode}`);
@@ -67,7 +70,8 @@ io.on("connection", (socket) => {
 
   // Listen for updates from clients and broadcast them to others in the same room
   socket.on("updateGameState", ({ roomCode,players, position,turn,currentPlayerPosition, targetPosition,anotherchance }) => {
-    console.log(players,position,turn,currentPlayerPosition, targetPosition,anotherchance);
+    console.log(players, position, turn, currentPlayerPosition, targetPosition, anotherchance);
+    rooms[roomCode].position = position;
     io.to(roomCode).emit("gameStateUpdate",players, position,turn,currentPlayerPosition, targetPosition,anotherchance);
   });
 
