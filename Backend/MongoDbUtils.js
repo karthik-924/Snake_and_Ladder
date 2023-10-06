@@ -1,6 +1,6 @@
 const { MongoClient,ServerApiVersion } = require('mongodb');
 
-const uri = 'mongodb+srv://emmadikarthik924:jnS5Kg0pkUVTjWYR@storage.cxvqsth.mongodb.net/?retryWrites=true&w=majority'; 
+const uri = 'mongodb+srv://username:password@storage.cxvqsth.mongodb.net/?retryWrites=true&w=majority'; 
 // const client = new MongoClient(uri);
 
 const client = new MongoClient(uri, {
