@@ -41,7 +41,7 @@ io.on("connection", (socket) => {
     socket.emit("roomCreated", { roomCode, playerName });
 
     // Broadcast the updated player list to all players in the room
-    io.to(roomCode).emit("playerList", rooms[roomCode].players);
+    io.to(roomCode).emit("playerList", rooms[roomCode].players, rooms[roomCode].number);
     
   });
 
@@ -58,16 +58,17 @@ io.on("connection", (socket) => {
     socket.emit("roomJoined", { roomCode, playerName });
     console.log(room.players.length===parseInt(room.number));
     if(room.players.length === parseInt(room.number)){
-      socket.emit("gameStart");
+      io.to(roomCode).emit("startGame");
     }
 
     // Broadcast the updated player list to all players in the room
-    io.to(roomCode).emit("playerList", rooms[roomCode].players);
+    io.to(roomCode).emit("playerList", rooms[roomCode].players, rooms[roomCode].number);
   });
 
   // Listen for updates from clients and broadcast them to others in the same room
-  socket.on("updateGameState", ({ roomCode, position }) => {
-    io.to(roomCode).emit("gameStateUpdate", position);
+  socket.on("updateGameState", ({ roomCode,players, position,turn,currentPlayerPosition, targetPosition }) => {
+    console.log(players,position,turn,currentPlayerPosition, targetPosition);
+    io.to(roomCode).emit("gameStateUpdate",players, position,turn,currentPlayerPosition, targetPosition);
   });
 
   socket.on("disconnect", () => {

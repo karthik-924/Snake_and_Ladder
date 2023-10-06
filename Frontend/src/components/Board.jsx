@@ -233,20 +233,21 @@ const Board = ({ players,playerColors, position, updateDiceValue, diceDisabled }
               } border-solid border-black flex justify-center items-center`}
               style={{ backgroundColor: colors[i] }}
             >
-              {players?.map((player, index) => (
+              {players?.map((player, index) => {
+                // console.log(position);
+                return(
                 <div
                   key={index}
                   id={player}
-                  className={`players absolute ${
-                    String(position[player]) === String(value)
-                      ? "visible"
-                      : "invisible"
-                  } h-10 w-10 rounded-full opacity-[0.7]`}
+                  className={`players absolute ${String(position[player]) === String(value)
+                    ? "visible"
+                    : "invisible"
+                    } h-10 w-10 rounded-full opacity-[0.7]`}
                   style={{
                     backgroundColor: playerColors[index],
                   }}
-                ></div>
-              ))}
+                ></div>)
+              })}
               {value}
             </div>
           );

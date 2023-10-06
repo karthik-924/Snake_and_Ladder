@@ -14,6 +14,7 @@ const Home = () => {
   const [roomCode, setRoomCode] = useState("");
   const [playerName, setPlayerName] = useState("");
   const [players, setPlayers] = useState([]);
+  const [pfrom, setPFrom] = useState(0);
   const [diceValue, setDiceValue] = useState(0);
   const [diceDisabled, setDiceDisabled] = useState(false);
   const [turn, setTurn] = useState("");
@@ -35,18 +36,24 @@ const Home = () => {
     setNoofplayers(noofplayers);
     socket.emit("createRoom", { roomCode: newRoomCode, playerName, noofplayers });
     socket.on("playerList", (players) => {
-      setPlayers(players.reduce((acc, player) => {
+      const newPlayers=players.reduce((acc, player) => {
         acc.push(player.name);
         return acc;
-      }, []));
-      console.log(players);
-      setPosition(players.reduce((acc, player) => {
-        acc[player] = 1;
+      }, [])
+      console.log(newPlayers);
+      setPlayers((prevPlayers)=>newPlayers);
+      const newPosition=players.reduce((acc, player) => {
+        acc[player.name] = 1;
         return acc;
-      }, {}));
+      }, {})
+      console.log(newPosition);
+      setPosition(newPosition);
       setTurn(players[0].name);
       
     });
+
+    setDiceValue(0);
+    setDiceDisabled(false);
     // const name = prompt("Enter your name:");
   };
 
@@ -69,6 +76,8 @@ const Home = () => {
     }));
   
     setTurn(playerName);
+    setDiceValue(0);
+    setDiceDisabled(false);
     setPlay(true);
   
     // Start the computer's turn
@@ -95,17 +104,23 @@ const Home = () => {
     const newRoomCode = prompt("Enter room code:")
     setRoomCode(newRoomCode);
     const playerName = prompt("Enter your name:");
+    setPlayerName(playerName);
     socket.emit("joinRoom", { roomCode: newRoomCode, playerName });
-    socket.on("playerList", (players) => {
-      setPlayers(players.reduce((acc, player) => {
+    socket.on("playerList", (players,noofplayers) => {
+      const newPlayers=players.reduce((acc, player) => {
         acc.push(player.name);
         return acc;
-      }, []));
+      }, [])
+      console.log(newPlayers);
+      setPlayers((prevPlayers) => newPlayers);
+      setNoofplayers(noofplayers);
       console.log(players);
-      setPosition(players.reduce((acc, player) => {
-        acc[player] = 1;
+      const newPosition=players.reduce((acc, player) => {
+        acc[player.name] = 1;
         return acc;
-      }, {}));
+      }, {})
+      console.log(newPosition);
+      setPosition(newPosition);
       setTurn(players[0].name);
       
       
@@ -117,8 +132,13 @@ const Home = () => {
   };
   
   useEffect(() => {
-    if (players.length === noofplayers) 
-      setPlay(true);
+    console.log(players,noofplayers);
+    
+    console.log(parseInt(noofplayers), players.length);
+      if (parseInt(noofplayers) === players.length) {
+        setPlay(true);
+      }
+    
 
   }, [players]);
 
@@ -136,28 +156,29 @@ const Home = () => {
     }));
   };
 
-  useEffect(() => {
-    // Listening for updates from the server
-    socket.on("gameStateUpdate", (updatedPosition) => {
-      setPosition(updatedPosition);
-    });
+  // useEffect(() => {
+  //   // Listening for updates from the server
+  //   socket.on("gameStateUpdate", (updatedPosition) => {
+  //     setPosition(updatedPosition);
+  //   });
 
-    socket.on("gameStartWithFriend", () => {
-      alert("The game has started with your friend. It's your turn.");
-    });
+  //   socket.on("gameStartWithFriend", () => {
+  //     alert("The game has started with your friend. It's your turn.");
+  //   });
 
-    socket.on("nextTurn", ({ nextPlayer }) => {
+  //   socket.on("nextTurn", ({ nextPlayer }) => {
       
-    });
+  //   });
 
-    return () => {
-      socket.off("gameStateUpdate");
-      socket.off("gameStartWithFriend");
-      socket.off("nextTurn");
-    };
-  }, [roomCode]);
+  //   return () => {
+  //     socket.off("gameStateUpdate");
+  //     socket.off("gameStartWithFriend");
+  //     socket.off("nextTurn");
+  //   };
+  // }, [roomCode]);
 
-  const movePlayer = (player, from, to) => {
+  const movePlayer =async(players,player, from, to) => {
+    console.log(player, from, to);
     if (from === to) {
       // If already at the target position, proceed to the next player's turn
       if (laddersfrom.includes(from)) {
@@ -168,18 +189,26 @@ const Home = () => {
         movePlayerDirectly(player, from, snakesto[index]);
       }
 
-      const currentPlayerIndex = players.indexOf(`${turn}`);
+      const currentPlayerIndex = players.indexOf(`${player}`);
       if (players.length === 1) {
         setTurn(turn);
         setDiceDisabled(false);
         return;
       }
       const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
-      const nextPlayerTurn = players[nextPlayerIndex].split("#")[1];
+      const nextPlayerTurn = players[nextPlayerIndex];
+      console.log(players,nextPlayerTurn,currentPlayerIndex,nextPlayerIndex);
       setTurn(nextPlayerTurn);
-      setDiceDisabled(false);
       return;
     }
+    if (pfrom !== from) {
+      setPFrom(from);
+      console.log(pfrom, from);
+    }
+    else {
+      return;
+    }
+    
 
     // Calculate the direction of movement
     const direction = from < to ? 1 : -1;
@@ -189,16 +218,37 @@ const Home = () => {
       ...prevPosition,
       [player]: prevPosition[player] + direction,
     }));
-
+    
     // Wait for a short delay
-    setTimeout(() => {
-      // Move to the next step
-      movePlayer(player, from + direction, to);
-    }, 300); // Adjust the delay as needed
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+  // Move to the next step
+    await movePlayer(players,player, from + direction, to);
   };
 
+  // useEffect(() => {
+  //   console.log(position,turn);
+  //   socket.emit("updateGameState", { roomCode, position, turn });
+  // }, [position,turn]);
   useEffect(() => {
-    if (diceValue !== 0) {
+    console.log(turn,"\n",playerName);
+    if (playerName === turn) {
+      setDiceDisabled(false);
+    }
+    else {
+      setDiceDisabled(true);
+    }
+  }, [turn]);
+
+  // useEffect(() => {
+  //   // Listening for updates from the server
+    
+  
+  //   // ...
+  // }, []);
+
+  useEffect(() => {
+    if (diceValue !== 0 && players.length > 0 && turn === playerName) {
       // Disable the dice while processing
       setDiceDisabled(true);
       console.log(position);
@@ -208,10 +258,17 @@ const Home = () => {
       const targetPosition = currentPlayerPosition + diceValue;
 
       // Move the player
-
-      movePlayer(turn, currentPlayerPosition, targetPosition);
+      // movePlayer(players,turn, currentPlayerPosition, targetPosition);
+      // movePlayer(turn, currentPlayerPosition, targetPosition);
+      socket.emit("updateGameState", { roomCode, players, position, turn, currentPlayerPosition, targetPosition });
+      
     }
   }, [rolled]);
+
+  socket.on("gameStateUpdate", (players,updatedPosition, turn, currentPlayerPosition, targetPosition) => {
+    console.log(updatedPosition);
+    movePlayer(players,turn, currentPlayerPosition, targetPosition);
+  });
   
   return (
     <div>
