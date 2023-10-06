@@ -186,27 +186,6 @@ const Home = () => {
     }));
   };
 
-  // useEffect(() => {
-  //   // Listening for updates from the server
-  //   socket.on("gameStateUpdate", (updatedPosition) => {
-  //     setPosition(updatedPosition);
-  //   });
-
-  //   socket.on("gameStartWithFriend", () => {
-  //     alert("The game has started with your friend. It's your turn.");
-  //   });
-
-  //   socket.on("nextTurn", ({ nextPlayer }) => {
-
-  //   });
-
-  //   return () => {
-  //     socket.off("gameStateUpdate");
-  //     socket.off("gameStartWithFriend");
-  //     socket.off("nextTurn");
-  //   };
-  // }, [roomCode]);
-
   const movePlayer = async (players, player, from, to, anotherchance) => {
     console.log(player, from, to);
     if (from === to) {
@@ -223,8 +202,8 @@ const Home = () => {
         console.log(players.length, currentPlayerIndex);
         if (players.length === 1) {
           setTurn(playerName);
-          
           setDiceDisabled(false);
+          setDiceValue(0);
           return;
         }
         const nextPlayerIndex = (currentPlayerIndex + 1) % players.length;
@@ -236,10 +215,12 @@ const Home = () => {
           nextPlayerIndex
         );
         setTurn(nextPlayerTurn);
+        setDiceValue(0);
         return;
       } else {
         setTurn(player);
         setDiceDisabled(false);
+        setDiceValue(0);
         return;
       }
     }
@@ -274,10 +255,13 @@ const Home = () => {
   useEffect(() => {
     console.log(turn, "\n", playerName);
     if (playerName === turn) {
+      setDiceValue(0);
       setDiceDisabled(false);
     } else if (turn === "Computer") {
+      setDiceValue(0);
       startComputerTurn(turn);
     } else {
+      setDiceValue(0);
       setDiceDisabled(true);
     }
   }, [turn]);
@@ -468,7 +452,8 @@ const Home = () => {
             diceDisabled={diceDisabled}
             setDiceDisabled={setDiceDisabled}
             turn={turn}
-            setTurn={setTurn}
+              setTurn={setTurn}
+            playerName={playerName}
             rolled={rolled}
             setRolled={setRolled}
             updateDiceValue={updateDiceValue}

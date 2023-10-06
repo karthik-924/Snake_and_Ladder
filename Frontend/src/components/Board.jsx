@@ -13,7 +13,9 @@ import snake7 from "../assets/s7.png";
 import snake5 from "../assets/s5.png";
 import snake8 from "../assets/s8.png";
 import snake9 from "../assets/snake4.png";
-const Board = ({ players, position, updateDiceValue, diceDisabled, roll }) => {
+import DisplayBoard from "./DisplayBoard";
+import { Notification, Paper, Text } from "@mantine/core";
+const Board = ({ players, position,turn,playerName,updateDiceValue,diceValue, diceDisabled, roll }) => {
   const playerColors = ["#000000", "#000080", "#008800", "#ff9900"];
   console.log(players);
   const colors = [
@@ -256,7 +258,9 @@ const Board = ({ players, position, updateDiceValue, diceDisabled, roll }) => {
           );
         })}
       </div>
-      <div id="dice-wrapper">
+      <div id="dice-wrapper" className="flex flex-col gap-5 justify-center items-center w-[30%] max-[1300px]:w-[30%] max-xl:w-[30%] max-[1150px]:w-[25%] max-[1040px]:w-[20%] max-[900px]:w-[15%] max-[750px]:w-[15%] max-[650px]:w-[25%] max-[550px]:w-[40%] max-[400px]:w-[40%]">
+        <DisplayBoard players={players} position={position} playerColors={playerColors} />
+        <div className={`${turn !== playerName ?"hidden":""}`}>
       <Dice
         onRoll={(value) => {
           updateDiceValue(value);
@@ -266,6 +270,11 @@ const Board = ({ players, position, updateDiceValue, diceDisabled, roll }) => {
         disabled={diceDisabled}
         />
         </div>
+        <div className={`${turn === playerName ? "hidden" :"bg-white rounded-md z-10 text-black w-full p-5"}`}>
+          <p className="m-0">Player {turn} rolled {diceValue}</p>
+        </div>
+      </div>
+      
     </div>
   );
 };
