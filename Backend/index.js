@@ -66,9 +66,9 @@ io.on("connection", (socket) => {
   });
 
   // Listen for updates from clients and broadcast them to others in the same room
-  socket.on("updateGameState", ({ roomCode,players, position,turn,currentPlayerPosition, targetPosition }) => {
-    console.log(players,position,turn,currentPlayerPosition, targetPosition);
-    io.to(roomCode).emit("gameStateUpdate",players, position,turn,currentPlayerPosition, targetPosition);
+  socket.on("updateGameState", ({ roomCode,players, position,turn,currentPlayerPosition, targetPosition,anotherchance }) => {
+    console.log(players,position,turn,currentPlayerPosition, targetPosition,anotherchance);
+    io.to(roomCode).emit("gameStateUpdate",players, position,turn,currentPlayerPosition, targetPosition,anotherchance);
   });
 
   socket.on("disconnect", () => {
