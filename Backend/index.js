@@ -2,6 +2,8 @@ const express = require('express');
 const http = require('http');
 const { Server } = require('socket.io');
 const cors = require('cors');
+// const { MongoClient } = require('mongodb');
+const { updateGameState, getRoomData, setRoomData } = require('./MongoDbUtils');
 
 const app = express();
 const server = http.createServer(app);
@@ -23,6 +25,7 @@ server.listen(PORT, () => {
 });
 
 let rooms = {}; // Stores active game rooms
+let roomC = "";
 console.log(rooms);
 
 io.on("connection", (socket) => {
@@ -30,10 +33,11 @@ io.on("connection", (socket) => {
     
   socket.on("createRoom", ({ roomCode, playerName, noofplayers }) => {
     if (!rooms[roomCode]) {
-      rooms[roomCode] = { players: [], number: 0 };
+      rooms[roomCode] = { players: [], number: 0,position: {} };
     }
     
     const room = rooms[roomCode];
+    roomC = roomCode;
     room.players.push({ id: socket.id, name: playerName, position: 1 });
     room.number = noofplayers;
     socket.join(roomCode);
@@ -46,15 +50,20 @@ io.on("connection", (socket) => {
     
   });
 
-  socket.on("joinRoom", ({ roomCode, playerName }) => {
+  socket.on("joinRoom", async ({ roomCode, playerName }) => {
     if (!rooms[roomCode]) {
       return;
     }
     
     const room = rooms[roomCode];
+    roomC = roomCode;
     const playerExists = room.players.some(player => player.name === playerName);
     if(!playerExists)
-    room.players.push({ id: socket.id, name: playerName, position: 1 });
+      room.players.push({ id: socket.id, name: playerName, position: 1 });
+    // else {
+    //   const roomData = await getRoomData(roomCode);
+    //   room[roomCode] = roomData;
+    // }
     socket.join(roomCode);
     console.log(`Player ${playerName} joined room ${roomCode}`);
 
@@ -71,12 +80,25 @@ io.on("connection", (socket) => {
   // Listen for updates from clients and broadcast them to others in the same room
   socket.on("updateGameState", ({ roomCode,players, position,turn,currentPlayerPosition, targetPosition,anotherchance }) => {
     console.log(players, position, turn, currentPlayerPosition, targetPosition, anotherchance);
-    rooms[roomCode].position = position;
+    rooms[roomCode][position] = position;
+    
     io.to(roomCode).emit("gameStateUpdate",players, position,turn,currentPlayerPosition, targetPosition,anotherchance);
   });
 
-  socket.on("disconnect", () => {
-      // console.log(`Socket disconnected: ${socket.id}`);
-    });
+  socket.on("disconnect", async() => {
+    // console.log(`Socket disconnected: ${socket.id}`);
+    // await setRoomData(roomC, rooms[roomC]);
+    // updateGameState(roomCode, room);
+    for (const roomCode in rooms) {
+      const room = rooms[roomCode];
+      const disconnectedPlayerIndex = room.players.findIndex(player => player.id === socket.id);
+      if (disconnectedPlayerIndex !== -1) {
+        room.players.splice(disconnectedPlayerIndex, 1);
+        io.to(roomCode).emit("playerList", room.players, room.number);
+        break;
+      }
+    }
+  });
+  
   });
   

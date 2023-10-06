@@ -221,6 +221,8 @@ const Home = () => {
         setTurn(player);
         setDiceDisabled(false);
         setDiceValue(0);
+        if (playerName === "Computer")
+          setTimeout(() => startComputerTurn(player), 1000);
         return;
       }
     }
